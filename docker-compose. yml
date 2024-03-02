@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  zookeeper:
+    image: wurstmeister/zookeeper:latest
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+
+  kafka:
+    image: wurstmeister/kafka:latest
+    container_name: kafka
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_ADVERTISED_LISTENERS: INSIDE://kafka:9093,OUTSIDE://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
+      KAFKA_LISTENERS: INSIDE://0.0.0.0:9093,OUTSIDE://0.0.0.0:9092
+      KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
+      KAFKA_CREATE_TOPICS: "myTopic:1:1"
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+      KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  mysql:
+    image: mysql:latest
+    container_name: mysql
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: spring-kafka
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root
+
+  springboot:
+    image: shahbazyans/spring-kafka:latest
+    container_name: springboot
+    ports:
+      - "8080:8080"
+    depends_on:
+      - kafka
+      - mysql
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/spring-kafka
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: "localhost:9092"
